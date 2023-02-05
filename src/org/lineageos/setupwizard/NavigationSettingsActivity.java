@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.content.Context;
 import android.view.View;
 import android.widget.CheckBox;
@@ -48,11 +49,14 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
 
     public static final String TAG = NavigationSettingsActivity.class.getSimpleName();
 
+    private static final String KEY_NAV_BAR_INVERSE = "sysui_nav_bar_inverse";
+
     private SetupWizardApp mSetupWizardApp;
 
     private String mSelection = NAV_BAR_MODE_GESTURAL_OVERLAY;
 
     private CheckBox mHideGesturalHint;
+    private CheckBox mInvertLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +107,8 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
                 findViewById(R.id.navigation_illustration);
         final RadioGroup radioGroup = findViewById(R.id.navigation_radio_group);
         mHideGesturalHint = findViewById(R.id.hide_navigation_hint);
+        mInvertLayout = findViewById(R.id.invert_layout);
+        hideInvertCheckbox();
         radioGroup.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -112,16 +118,19 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
                     navigationIllustration
                             .setAnimation(R.raw.lottie_system_nav_fully_gestural);
                     revealHintCheckbox();
+                    hideInvertCheckbox();
                     break;
                 case R.id.radio_two_button:
                     mSelection = NAV_BAR_MODE_2BUTTON_OVERLAY;
                     navigationIllustration.setAnimation(R.raw.lottie_system_nav_2_button);
                     hideHintCheckBox();
+                    hideInvertCheckbox();
                     break;
                 case R.id.radio_sw_keys:
                     mSelection = NAV_BAR_MODE_3BUTTON_OVERLAY;
                     navigationIllustration.setAnimation(R.raw.lottie_system_nav_3_button);
                     hideHintCheckBox();
+                    revealInvertCheckbox();
                     break;
                 }
 
@@ -162,12 +171,48 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
             });
     }
 
+    private void revealInvertCheckbox() {
+        mInvertLayout.animate().cancel();
+
+        if (mInvertLayout.getVisibility() == View.VISIBLE) {
+            return;
+        }
+
+        mInvertLayout.setVisibility(View.VISIBLE);
+        mInvertLayout.setAlpha(0.0f);
+        mInvertLayout.animate()
+            .translationY(0)
+            .alpha(1.0f)
+            .setListener(null);
+    }
+
+    private void hideInvertCheckbox() {
+        if (mInvertLayout.getVisibility() == View.INVISIBLE) {
+            return;
+        }
+
+        mInvertLayout.animate()
+            .translationY(-mInvertLayout.getHeight())
+            .alpha(0.0f)
+            .setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    mInvertLayout.setVisibility(View.INVISIBLE);
+                }
+            });
+    }
+
     @Override
     protected void onNextPressed() {
         mSetupWizardApp.getSettingsBundle().putString(NAVIGATION_OPTION_KEY, mSelection);
         boolean hideHint = mHideGesturalHint.isChecked();
         LineageSettings.System.putIntForUser(getContentResolver(),
                 LineageSettings.System.NAVIGATION_BAR_HINT, hideHint ? 0 : 1,
+                UserHandle.USER_CURRENT);
+        boolean invertLayout = mInvertLayout.isChecked();
+        Settings.Secure.putIntForUser(getContentResolver(),
+                KEY_NAV_BAR_INVERSE, invertLayout ? 1 : 0,
                 UserHandle.USER_CURRENT);
         Intent intent = WizardManagerHelper.getNextIntent(getIntent(), Activity.RESULT_OK);
         nextAction(NEXT_REQUEST, intent);
