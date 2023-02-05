@@ -19,6 +19,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.RadioButton;
@@ -32,6 +33,8 @@ import org.lineageos.setupwizard.util.SetupWizardUtils;
 
 public class NavigationSettingsActivity extends BaseSetupWizardActivity {
 
+    private static final String KEY_NAV_BAR_INVERSE = "sysui_nav_bar_inverse";
+
     private SetupWizardApp mSetupWizardApp;
 
     private boolean mIsTaskbarEnabled;
@@ -39,6 +42,7 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
     private String mSelection = NAV_BAR_MODE_GESTURAL_OVERLAY;
 
     private CheckBox mHideGesturalHint;
+    private CheckBox mInvertLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,10 +93,14 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
                 findViewById(R.id.navigation_illustration);
         final RadioGroup radioGroup = findViewById(R.id.navigation_radio_group);
         mHideGesturalHint = findViewById(R.id.hide_navigation_hint);
+        mInvertLayout = findViewById(R.id.invert_layout);
 
-        // Hide navigation hint checkbox when taskbar is enabled
+        // Hide navigation hint and invert layout checkboxs when taskbar is enabled
         if (mIsTaskbarEnabled) {
             mHideGesturalHint.setVisibility(View.GONE);
+            mInvertLayout.setVisibility(View.GONE);
+        } else {
+            hideInvertCheckbox();
         }
 
         radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
@@ -102,16 +110,19 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
                     navigationIllustration
                             .setAnimation(R.raw.lottie_system_nav_fully_gestural);
                     revealHintCheckbox();
+                    hideInvertCheckbox();
                     break;
                 case R.id.radio_two_button:
                     mSelection = NAV_BAR_MODE_2BUTTON_OVERLAY;
                     navigationIllustration.setAnimation(R.raw.lottie_system_nav_2_button);
                     hideHintCheckBox();
+                    hideInvertCheckbox();
                     break;
                 case R.id.radio_sw_keys:
                     mSelection = NAV_BAR_MODE_3BUTTON_OVERLAY;
                     navigationIllustration.setAnimation(R.raw.lottie_system_nav_3_button);
                     hideHintCheckBox();
+                    revealInvertCheckbox();
                     break;
             }
 
@@ -159,6 +170,46 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
                 });
     }
 
+    private void revealInvertCheckbox() {
+        if (mIsTaskbarEnabled) {
+           return;
+        }
+
+        mInvertLayout.animate().cancel();
+
+        if (mInvertLayout.getVisibility() == View.VISIBLE) {
+            return;
+        }
+
+        mInvertLayout.setVisibility(View.VISIBLE);
+        mInvertLayout.setAlpha(0.0f);
+        mInvertLayout.animate()
+            .translationY(0)
+            .alpha(1.0f)
+            .setListener(null);
+    }
+
+    private void hideInvertCheckbox() {
+        if (mIsTaskbarEnabled) {
+           return;
+        }
+
+        if (mInvertLayout.getVisibility() == View.INVISIBLE) {
+            return;
+        }
+
+        mInvertLayout.animate()
+            .translationY(-mInvertLayout.getHeight())
+            .alpha(0.0f)
+            .setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    mInvertLayout.setVisibility(View.INVISIBLE);
+                }
+            });
+    }
+
     @Override
     protected void onNextPressed() {
         mSetupWizardApp.getSettingsBundle().putString(NAVIGATION_OPTION_KEY, mSelection);
@@ -166,6 +217,10 @@ public class NavigationSettingsActivity extends BaseSetupWizardActivity {
             boolean hideHint = mHideGesturalHint.isChecked();
             LineageSettings.System.putIntForUser(getContentResolver(),
                     LineageSettings.System.NAVIGATION_BAR_HINT, hideHint ? 0 : 1,
+                    UserHandle.USER_CURRENT);
+            boolean invertLayout = mInvertLayout.isChecked();
+            Settings.Secure.putIntForUser(getContentResolver(),
+                    KEY_NAV_BAR_INVERSE, invertLayout ? 1 : 0,
                     UserHandle.USER_CURRENT);
         }
         super.onNextPressed();
