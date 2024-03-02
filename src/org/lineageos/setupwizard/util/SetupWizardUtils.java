@@ -59,7 +59,6 @@ import org.lineageos.setupwizard.ScreenLockActivity;
 import org.lineageos.setupwizard.SetupWizardApp;
 import org.lineageos.setupwizard.SetupWizardExitWorker;
 import org.lineageos.setupwizard.SimMissingActivity;
-import org.lineageos.setupwizard.wizardmanager.WizardManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -83,18 +82,6 @@ public class SetupWizardUtils {
 
     public static SharedPreferences getPrefs(Context context) {
         return context.getSharedPreferences("SetupWizardPrefs", MODE_PRIVATE);
-    }
-
-    public static void setMobileDataEnabled(Context context, boolean enabled) {
-        TelephonyManager tm = context.getSystemService(TelephonyManager.class);
-        if (tm.isMultiSimEnabled()) {
-            int subId = SubscriptionManager.getDefaultDataSubscriptionId();
-            int phoneId = SubscriptionManager.getPhoneId(subId);
-            tm.createForSubscriptionId(subId).setDataEnabledForReason(
-                    TelephonyManager.DATA_ENABLED_REASON_USER, enabled);
-        } else {
-            tm.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER, enabled);
-        }
     }
 
     public static boolean hasWifi(Context context) {

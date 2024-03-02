@@ -31,7 +31,6 @@ public class WelcomeActivity extends SubBaseActivity {
         super.onCreate(savedInstanceState);
         onSetupStart();
         SystemBarHelper.setBackButtonVisible(getWindow(), false);
-        View rootView = findViewById(R.id.setup_wizard_layout);
         setNextText(R.string.start);
         Button startButton = findViewById(R.id.start);
         Button emergButton = findViewById(R.id.emerg_dialer);
@@ -53,8 +52,12 @@ public class WelcomeActivity extends SubBaseActivity {
         }
 
         TextView welcomeTitle = findViewById(R.id.welcome_title);
-        welcomeTitle.setText(getString(R.string.setup_welcome_message,
-                getString(R.string.os_name)));
+        if (SetupWizardUtils.isManagedProfile(this)) {
+            welcomeTitle.setText(getString(R.string.setup_managed_profile_welcome_message));
+        } else {
+            welcomeTitle.setText(getString(R.string.setup_welcome_message,
+                    getString(R.string.os_name)));
+        }
     }
 
     @Override
